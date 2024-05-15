@@ -1,74 +1,97 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Particle Sketch</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background: black;
-      }
-      canvas {
-        border: 1px solid white;
-      }
-    </style>
-  </head>
-  <body>
-    <script>
-      let particles = [];
-      let numParticles = 200;
-      let angleStep;
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Particle Animation</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  <script>
+    let particles = [];
+    let numParticles = 260;
+    let angleStep;
+    let lengthVariance; // Global variable for length variance
+    let layout = 0;
 
-      function setup() {
-        createCanvas(800, 800);
-        angleStep = TWO_PI / numParticles;
-        for (let i = 0; i < numParticles; i++) {
-          particles.push(new Particle(i * angleStep));
-        }
+    function setup() {
+      createCanvas(windowWidth, windowHeight);
+      angleStep = TWO_PI / numParticles;
+      lengthVariance = random(8, 20); // Initialize with a random value between 6 and 20 pixels
+      for (let i = 0; i < numParticles; i++) {
+        particles.push(new Particle(i * angleStep));
+      }
+    }
+
+    function draw() {
+      background(0);
+      translate(width / 2, height / 2);
+      for (let p of particles) {
+        p.update();
+        p.display();
+      }
+    }
+
+    class Particle {
+      constructor(angle) {
+        this.angle = angle;
+        this.radius = random(10, 40);
+        this.speed = random(0.5, 2);
+        this.stopRadius = (width / 9) + random(width / 10);
+        this.noiseOffset = random(1000);
+        this.shapeType = int(random(3)); // Randomly choose a shape type
+        this.length = random(8, 20); // Length of the line segment
       }
 
-      function draw() {
-        background(0);
-        translate(width / 2, height / 2);
-        for (let p of particles) {
-          p.update();
-          p.display();
-        }
-      }
-
-      class Particle {
-        constructor(angle) {
-          this.angle = angle;
-          this.radius = random(50, 100);
-          this.speed = random(0.5, 2);
-          this.offset = random(TWO_PI);
-        }
-
-        update() {
+      update() {
+        if (this.radius < this.stopRadius) {
           this.radius += this.speed;
-          if (this.radius > width / 2) {
-            this.radius = random(50, 100);
-          }
-        }
-
-        display() {
-          let x = this.radius * cos(this.angle);
-          let y = this.radius * sin(this.angle);
-          let squiggleLength = 20;
-          let squiggleAngle = this.angle + sin(frameCount * 0.1 + this.offset) * PI / 4;
-          let x2 = x + squiggleLength * cos(squiggleAngle);
-          let y2 = y + squiggleLength * sin(squiggleAngle);
-
-          stroke(255);
-          strokeWeight(2);
-          line(x, y, x2, y2);
         }
       }
-    </script>
-  </body>
+
+      display() {
+        let noiseFactor = noise(this.noiseOffset) * 10;
+        let x = (this.radius + noiseFactor) * cos(this.angle);
+        let y = (this.radius + noiseFactor + layout) * sin(this.angle);
+
+        stroke(255);
+        strokeWeight(2);
+
+        switch (this.shapeType) {
+          case 0:
+            // Draw a straight line segment
+            line(x, y, x + lengthVariance * cos(this.angle), y + lengthVariance * sin(this.angle));
+            break;
+          case 1:
+            // Draw a 90-degree angle
+            line(x, y, x + (lengthVariance / 2) * cos(this.angle), y + (lengthVariance / 2) * sin(this.angle));
+            line(x + (lengthVariance / 2) * cos(this.angle), y + (lengthVariance / 2) * sin(this.angle), x + (lengthVariance / 2) * cos(this.angle), y + lengthVariance * sin(this.angle));
+            break;
+          case 2:
+            // Draw a triangular wave
+            line(x, y, x + (lengthVariance / 4) * cos(this.angle), y + (lengthVariance / 4) * sin(this.angle));
+            line(x + (lengthVariance / 4) * cos(this.angle), y + (lengthVariance / 4) * sin(this.angle), x + (lengthVariance / 2) * cos(this.angle), y);
+            line(x + (lengthVariance / 2) * cos(this.angle), y, x + lengthVariance * cos(this.angle), y - (lengthVariance / 4) * sin(this.angle));
+            break;
+        }
+
+        this.noiseOffset += 0.018; // Increment noise offset for squiggly effect
+      }
+    }
+
+    function mousePressed() {
+      layout = int(random(-200, 10));
+      for (let p of particles) {
+        p.radius = random(50, 100); // Reset radius
+      }
+      lengthVariance = random(6, 20); // Change the length variance
+    }
+  </script>
+</body>
 </html>
