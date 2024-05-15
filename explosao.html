@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Particle Sketch</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: black;
+      }
+      canvas {
+        border: 1px solid white;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      let particles = [];
+      let numParticles = 200;
+      let angleStep;
+
+      function setup() {
+        createCanvas(800, 800);
+        angleStep = TWO_PI / numParticles;
+        for (let i = 0; i < numParticles; i++) {
+          particles.push(new Particle(i * angleStep));
+        }
+      }
+
+      function draw() {
+        background(0);
+        translate(width / 2, height / 2);
+        for (let p of particles) {
+          p.update();
+          p.display();
+        }
+      }
+
+      class Particle {
+        constructor(angle) {
+          this.angle = angle;
+          this.radius = random(50, 100);
+          this.speed = random(0.5, 2);
+          this.offset = random(TWO_PI);
+        }
+
+        update() {
+          this.radius += this.speed;
+          if (this.radius > width / 2) {
+            this.radius = random(50, 100);
+          }
+        }
+
+        display() {
+          let x = this.radius * cos(this.angle);
+          let y = this.radius * sin(this.angle);
+          let squiggleLength = 20;
+          let squiggleAngle = this.angle + sin(frameCount * 0.1 + this.offset) * PI / 4;
+          let x2 = x + squiggleLength * cos(squiggleAngle);
+          let y2 = y + squiggleLength * sin(squiggleAngle);
+
+          stroke(255);
+          strokeWeight(2);
+          line(x, y, x2, y2);
+        }
+      }
+    </script>
+  </body>
+</html>
