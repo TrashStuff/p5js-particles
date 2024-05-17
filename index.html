@@ -30,7 +30,7 @@
     }
 
     function draw() {
-      background(0);
+      background('#76747B');
       translate(width / 2, height / 2);
       for (let p of particles) {
         p.update();
@@ -60,7 +60,7 @@
         let x = (this.radius + noiseFactor) * cos(this.angle);
         let y = (this.radius + noiseFactor + layout) * sin(this.angle);
 
-        stroke(255);
+        stroke(0);
         strokeWeight(2);
 
         switch (this.shapeType) {
