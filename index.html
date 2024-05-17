@@ -15,50 +15,103 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
   <script>
     let particles = [];
-    let numParticles = 260;
-    let angleStep;
-    let lengthVariance; // Global variable for length variance
-    let layout = 0;
+    let font;
+    let targetPositions = [];
+    let formingUsina = false;
+
+    function preload() {
+      // Load the uploaded font
+      font = loadFont('AltRiveraBold.otf');
+    }
 
     function setup() {
       createCanvas(windowWidth, windowHeight);
-      angleStep = TWO_PI / numParticles;
-      lengthVariance = random(8, 20); // Initialize with a random value between 6 and 20 pixels
-      for (let i = 0; i < numParticles; i++) {
-        particles.push(new Particle(i * angleStep));
+      textFont(font);
+      textSize(200);
+      textAlign(CENTER, CENTER);
+
+      // Calculate target positions for the word "USINA"
+      let points = font.textToPoints('USINA', width / 2 - 300, height / 2, 192, {
+        sampleFactor: 0.2
+      });
+
+      for (let pt of points) {
+        targetPositions.push(createVector(pt.x, pt.y));
       }
+
+      for (let i = 0; i < targetPositions.length; i++) {
+        particles.push(new Particle(random(width), random(height), targetPositions[i]));
+      }
+
+      // Listen for messages from the parent page
+      window.addEventListener('message', (event) => {
+        if (event.data === 'triggerUsina') {
+          formingUsina = true;
+        }
+      });
     }
 
     function draw() {
       background('#76747B');
-      translate(width / 2, height / 2);
       for (let p of particles) {
+        if (formingUsina) {
+          p.setTargetToText();
+        } else {
+          p.setTargetToRandom();
+        }
         p.update();
         p.display();
       }
     }
 
     class Particle {
-      constructor(angle) {
-        this.angle = angle;
-        this.radius = random(10, 40);
-        this.speed = random(0.5, 2);
-        this.stopRadius = (width / 9) + random(width / 10);
+      constructor(x, y, target) {
+        this.pos = createVector(x, y);
+        this.initialTarget = target;
+        this.target = createVector(random(width), random(height));
+        this.vel = p5.Vector.random2D();
+        this.acc = createVector();
+        this.maxSpeed = 5;
+        this.maxForce = 0.3;
         this.noiseOffset = random(1000);
         this.shapeType = int(random(3)); // Randomly choose a shape type
         this.length = random(8, 20); // Length of the line segment
       }
 
+      setTargetToText() {
+        this.target = this.initialTarget;
+      }
+
+      setTargetToRandom() {
+        this.target = createVector(random(width), random(height));
+      }
+
       update() {
-        if (this.radius < this.stopRadius) {
-          this.radius += this.speed;
+        // Move towards the target position
+        let force = p5.Vector.sub(this.target, this.pos);
+        let d = force.mag();
+        let speed = this.maxSpeed;
+        if (d < 100) {
+          speed = map(d, 0, 100, 0, this.maxSpeed);
         }
+        force.setMag(speed);
+        force.sub(this.vel);
+        force.limit(this.maxForce);
+        this.applyForce(force);
+
+        this.vel.add(this.acc);
+        this.pos.add(this.vel);
+        this.acc.mult(0);
+      }
+
+      applyForce(f) {
+        this.acc.add(f);
       }
 
       display() {
         let noiseFactor = noise(this.noiseOffset) * 10;
-        let x = (this.radius + noiseFactor) * cos(this.angle);
-        let y = (this.radius + noiseFactor + layout) * sin(this.angle);
+        let x = this.pos.x;
+        let y = this.pos.y;
 
         stroke(0);
         strokeWeight(2);
@@ -66,31 +119,23 @@
         switch (this.shapeType) {
           case 0:
             // Draw a straight line segment
-            line(x, y, x + lengthVariance * cos(this.angle), y + lengthVariance * sin(this.angle));
+            line(x, y, x + this.length * cos(noiseFactor), y + this.length * sin(noiseFactor));
             break;
           case 1:
             // Draw a 90-degree angle
-            line(x, y, x + (lengthVariance / 2) * cos(this.angle), y + (lengthVariance / 2) * sin(this.angle));
-            line(x + (lengthVariance / 2) * cos(this.angle), y + (lengthVariance / 2) * sin(this.angle), x + (lengthVariance / 2) * cos(this.angle), y + lengthVariance * sin(this.angle));
+            line(x, y, x + (this.length / 2) * cos(noiseFactor), y + (this.length / 2) * sin(noiseFactor));
+            line(x + (this.length / 2) * cos(noiseFactor), y + (this.length / 2) * sin(noiseFactor), x + (this.length / 2) * cos(noiseFactor), y + this.length * sin(noiseFactor));
             break;
           case 2:
             // Draw a triangular wave
-            line(x, y, x + (lengthVariance / 4) * cos(this.angle), y + (lengthVariance / 4) * sin(this.angle));
-            line(x + (lengthVariance / 4) * cos(this.angle), y + (lengthVariance / 4) * sin(this.angle), x + (lengthVariance / 2) * cos(this.angle), y);
-            line(x + (lengthVariance / 2) * cos(this.angle), y, x + lengthVariance * cos(this.angle), y - (lengthVariance / 4) * sin(this.angle));
+            line(x, y, x + (this.length / 4) * cos(noiseFactor), y + (this.length / 4) * sin(noiseFactor));
+            line(x + (this.length / 4) * cos(noiseFactor), y + (this.length / 4) * sin(noiseFactor), x + (this.length / 2) * cos(noiseFactor), y);
+            line(x + (this.length / 2) * cos(noiseFactor), y, x + this.length * cos(noiseFactor), y - (this.length / 4) * sin(noiseFactor));
             break;
         }
 
         this.noiseOffset += 0.018; // Increment noise offset for squiggly effect
       }
-    }
-
-    function mousePressed() {
-      layout = int(random(-200, 10));
-      for (let p of particles) {
-        p.radius = random(50, 100); // Reset radius
-      }
-      lengthVariance = random(6, 20); // Change the length variance
     }
   </script>
 </body>
