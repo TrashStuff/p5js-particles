@@ -26,8 +26,8 @@
     button {
       pointer-events: auto;
     }
-    @import url('https://fonts.googleapis.com/css2?family=Fjalla+One&display=swap');
   </style>
+  <link href="https://fonts.googleapis.com/css2?family=Fjalla+One&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="button-container" id="buttonContainer"></div>
@@ -50,12 +50,13 @@
     let nosButton;
 
     function preload() {
-      // No need to preload the Google Font
+      // Load the font from a valid TTF file
+      font = loadFont('https://raw.githubusercontent.com/processing/p5.js/main/docs/assets/fonts/FiraSans-Regular.ttf');
     }
 
     function setup() {
       createCanvas(windowWidth, windowHeight);
-      textFont('Fjalla One');  // Use the Google Font
+      textFont(font);
       textSize(200);
       textAlign(CENTER, CENTER);
 
