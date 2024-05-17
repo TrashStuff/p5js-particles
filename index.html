@@ -34,6 +34,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
   <script>
     let particles = [];
+    let font;
     let usinaPositions = [];
     let projetosPositions = [];
     let nosPositions = [];
@@ -49,28 +50,29 @@
     let nosButton;
 
     function preload() {
-      // No need to preload the Google Font
+      // Load the font
+      font = loadFont('https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/fonts/FiraSans-Regular.ttf');
     }
 
     function setup() {
       createCanvas(windowWidth, windowHeight);
-      textFont('Fjalla One');  // Use the Google Font
+      textFont(font);
       textSize(200);
       textAlign(CENTER, CENTER);
 
       // Calculate target positions for the word "USINA"
-      let usinaPoints = textToPoints('USINA', width / 2 - 300, height / 2, 192, {
+      let usinaPoints = font.textToPoints('USINA', width / 2 - 300, height / 2, 192, {
         sampleFactor: 0.2
       });
       usinaPoints.forEach(pt => usinaPositions.push(createVector(pt.x, pt.y)));
 
       // Calculate target positions for the words "Projetos" and "Nós"
-      let projetosPoints = textToPoints('PROJETOS', width / 2 - 400, height / 2, 50, {
+      let projetosPoints = font.textToPoints('PROJETOS', width / 2 - 400, height / 2, 50, {
         sampleFactor: 0.2
       });
       projetosPoints.forEach(pt => projetosPositions.push(createVector(pt.x, pt.y)));
 
-      let nosPoints = textToPoints('NÓS', width / 2 + 200, height / 2, 50, {
+      let nosPoints = font.textToPoints('NÓS', width / 2 + 200, height / 2, 50, {
         sampleFactor: 0.2
       });
       nosPoints.forEach(pt => nosPositions.push(createVector(pt.x, pt.y)));
