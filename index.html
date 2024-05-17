@@ -3,32 +3,277 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test Page</title>
+  <title>Particle Animation</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+    .button-container {
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      margin: 0;
-      background-color: #f0f0f0;
+      position: absolute;
+      width: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
     }
-    #message {
-      font-size: 24px;
-      color: #333;
+    button {
+      pointer-events: auto;
     }
   </style>
 </head>
 <body>
-  <div id="message">This is a test page</div>
-
+  <div class="button-container" id="buttonContainer"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
   <script>
+    let particles = [];
+    let font;
+    let usinaPositions = [];
+    let projetosPositions = [];
+    let nosPositions = [];
+    let formingUsina = false;
+    let circleCenter;
+    let circleRadius = 150;
+    let hoverCircleRadius = 400;
+    let formingCircle = false;
+    let gravityStrength = 0.1;
+    let projetosButtonCreated = false;
+    let nosButtonCreated = false;
+    let projetosButton;
+    let nosButton;
+
+    function preload() {
+      // Load the uploaded font
+      font = loadFont('FjallaOne-Regular.ttf');
+    }
+
+    function setup() {
+      createCanvas(windowWidth, windowHeight);
+      textFont(font);
+      textSize(200);
+      textAlign(CENTER, CENTER);
+
+      // Calculate target positions for the word "USINA"
+      let usinaPoints = font.textToPoints('USINA', width / 2 - 300, height / 2, 192, {
+        sampleFactor: 0.2
+      });
+      usinaPoints.forEach(pt => usinaPositions.push(createVector(pt.x, pt.y)));
+
+      // Calculate target positions for the words "Projetos" and "Nós"
+      let projetosPoints = font.textToPoints('PROJETOS', width / 2 - 400, height / 2, 50, {
+        sampleFactor: 0.2
+      });
+      projetosPoints.forEach(pt => projetosPositions.push(createVector(pt.x, pt.y)));
+
+      let nosPoints = font.textToPoints('NÓS', width / 2 + 200, height / 2, 50, {
+        sampleFactor: 0.2
+      });
+      nosPoints.forEach(pt => nosPositions.push(createVector(pt.x, pt.y)));
+
+      // Initialize particles
+      let totalPoints = max(usinaPositions.length, projetosPositions.length + nosPositions.length);
+      for (let i = 0; i < totalPoints; i++) {
+        particles.push(new Particle(random(width), random(height), createVector(width / 2, height / 2)));
+      }
+
+      // Define the circle center
+      circleCenter = createVector(width / 2, height / 2);
+    }
+
+    function draw() {
+      background('#76747B');
+      
+      let hoveringCircle = dist(mouseX, mouseY, circleCenter.x, circleCenter.y) < hoverCircleRadius;
+
+      if (hoveringCircle) {
+        formingCircle = true;
+      } else {
+        formingCircle = false;
+      }
+
+      let usinaIdx = 0, projetosIdx = 0, nosIdx = 0;
+      let projetosCount = 0, nosCount = 0;
+
+      for (let p of particles) {
+        if (formingCircle) {
+          if (usinaIdx < circleRadius) {
+            p.setTargetToCircle(circleCenter, circleRadius);
+            usinaIdx++;
+          } else if (projetosIdx < projetosPositions.length) {
+            p.setTargetToProjetos(projetosPositions[projetosIdx]);
+            projetosIdx++;
+            projetosCount++;
+          } else if (nosIdx < nosPositions.length) {
+            p.setTargetToNos(nosPositions[nosIdx]);
+            nosIdx++;
+            nosCount++;
+          } else {
+            p.setTargetToRandom();
+          }
+        } else if (formingUsina) {
+          if (usinaIdx < usinaPositions.length) {
+            p.setTargetToText(usinaPositions[usinaIdx]);
+            usinaIdx++;
+          } else {
+            p.setTargetToRandom();
+          }
+        } else {
+          p.setTargetToBundle();
+        }
+        p.update();
+        p.display();
+      }
+
+      if (formingCircle && !projetosButtonCreated && projetosCount > projetosPositions.length * 0.8) {
+        createProjetosButton();
+      }
+
+      if (formingCircle && !nosButtonCreated && nosCount > nosPositions.length * 0.8) {
+        createNosButton();
+      }
+    }
+
+    function triggerUsina() {
+      formingUsina = true;
+    }
+
+    function stopUsina() {
+      formingUsina = false;
+    }
+
+    function createProjetosButton() {
+      projetosButton = createButton('Projetos');
+      projetosButton.position(width / 2 - 600, height / 2);
+      projetosButton.mousePressed(() => window.location.href = 'https://trashstuff85.wixstudio.io/my-site-2/projetos');
+      projetosButtonCreated = true;
+    }
+
+    function createNosButton() {
+      nosButton = createButton('Nós');
+      nosButton.position(width / 2 + 300, height / 2);
+      nosButton.mousePressed(() => window.location.href = 'https://trashstuff85.wixstudio.io/my-site-2/sobre');
+      nosButtonCreated = true;
+    }
+
+    function triggerExplosion() {
+      for (let p of particles) {
+        p.explode();
+      }
+    }
+
+    class Particle {
+      constructor(x, y, target) {
+        this.pos = createVector(x, y);
+        this.initialTarget = target;
+        this.target = createVector(random(width), random(height));
+        this.vel = p5.Vector.random2D();
+        this.acc = createVector();
+        this.maxSpeed = 5;
+        this.maxForce = 0.3;
+        this.noiseOffset = random(1000);
+        this.shapeType = int(random(3)); // Randomly choose a shape type
+        this.length = random(8, 20); // Length of the line segment
+      }
+
+      setTargetToText(target) {
+        this.target = target;
+      }
+
+      setTargetToProjetos(target) {
+        this.target = target;
+      }
+
+      setTargetToNos(target) {
+        this.target = target;
+      }
+
+      setTargetToCircle(center, radius) {
+        let angle = TWO_PI * random();
+        this.target = p5.Vector.add(center, p5.Vector.fromAngle(angle).mult(radius));
+      }
+
+      setTargetToBundle() {
+        this.target = createVector(width / 2 + random(-200, 200), height / 2 + random(-200, 200));
+      }
+
+      setTargetToRandom() {
+        this.target = createVector(random(width), random(height));
+      }
+
+      applyGravity() {
+        let mouse = createVector(mouseX, mouseY);
+        let force = p5.Vector.sub(mouse, this.pos);
+        let distance = force.mag();
+        distance = constrain(distance, 5, 25);
+        let strength = gravityStrength / (distance * distance);
+        force.setMag(strength);
+        this.applyForce(force);
+      }
+
+      update() {
+        // Apply gravity towards the mouse
+        this.applyGravity();
+
+        // Move towards the target position
+        let force = p5.Vector.sub(this.target, this.pos);
+        let d = force.mag();
+        let speed = this.maxSpeed;
+        if (d < 100) {
+          speed = map(d, 0, 100, 0, this.maxSpeed);
+        }
+        force.setMag(speed);
+        force.sub(this.vel);
+        force.limit(this.maxForce);
+        this.applyForce(force);
+        
+        this.vel.add(this.acc);
+        this.pos.add(this.vel);
+        this.acc.mult(0);
+      }
+
+      applyForce(f) {
+        this.acc.add(f);
+      }
+
+      explode() {
+        let angle = random(TWO_PI);
+        let force = p5.Vector.fromAngle(angle);
+        force.mult(random(5, 10));
+        this.applyForce(force);
+      }
+
+      display() {
+        let noiseFactor = noise(this.noiseOffset) * 10;
+        let x = this.pos.x;
+        let y = this.pos.y;
+
+        stroke(0);
+        strokeWeight(2);
+        point(x, y);  // Draw particles as points
+
+        this.noiseOffset += 0.018; // Increment noise offset for squiggly effect
+      }
+    }
+
+    // Listen for messages from the parent window (Wix)
     window.addEventListener('message', (event) => {
-      if (event.data === 'triggerChange') {
-        document.getElementById('message').innerText = 'The button was clicked!';
+      if (event.data === 'triggerUsina') {
+        triggerUsina();
       }
     });
+
+    // Add a mousePressed function to trigger the explosion
+    function mousePressed() {
+      if (dist(mouseX, mouseY, circleCenter.x, circleCenter.y) < hoverCircleRadius) {
+        triggerExplosion();
+      }
+    }
   </script>
 </body>
 </html>
