@@ -3,276 +3,114 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Particle Animation</title>
+  <title>p5.js Sketch</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
   <style>
     body {
       margin: 0;
       overflow: hidden;
     }
-    canvas {
-      display: block;
-    }
-    .button-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      position: absolute;
-      width: 100%;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-    }
-    button {
-      pointer-events: auto;
-    }
   </style>
 </head>
 <body>
-  <div class="button-container" id="buttonContainer"></div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
   <script>
     let particles = [];
-    let font;
-    let usinaPositions = [];
-    let projetosPositions = [];
-    let nosPositions = [];
-    let formingUsina = false;
-    let circleCenter;
-    let circleRadius = 150;
-    let hoverCircleRadius = 400;
-    let formingCircle = false;
-    let gravityStrength = 0.1;
-    let projetosButtonCreated = false;
-    let nosButtonCreated = false;
-    let projetosButton;
-    let nosButton;
-
-    function preload() {
-      // Load the font from Google Fonts
-      font = loadFont('https://raw.githubusercontent.com/trashstuff/p5js-particles/main/FjallaOne-Regular.ttf');
-    }
+    let numParticles = 260;
+    let angleStep;
+    let lengthVariance; // Global variable for length variance
+    let centers = [];
 
     function setup() {
       createCanvas(windowWidth, windowHeight);
-      textFont(font);
-      textSize(200);
-      textAlign(CENTER, CENTER);
-
-      // Calculate target positions for the word "USINA"
-      let usinaPoints = font.textToPoints('USINA', width / 2 - 300, height / 2, 192, {
-        sampleFactor: 0.2
-      });
-      usinaPoints.forEach(pt => usinaPositions.push(createVector(pt.x, pt.y)));
-
-      // Calculate target positions for the words "Projetos" and "Nós"
-      let projetosPoints = font.textToPoints('PROJETOS', width / 2 - 400, height / 2, 50, {
-        sampleFactor: 0.2
-      });
-      projetosPoints.forEach(pt => projetosPositions.push(createVector(pt.x, pt.y)));
-
-      let nosPoints = font.textToPoints('NÓS', width / 2 + 200, height / 2, 50, {
-        sampleFactor: 0.2
-      });
-      nosPoints.forEach(pt => nosPositions.push(createVector(pt.x, pt.y)));
-
-      // Initialize particles
-      let totalPoints = max(usinaPositions.length, projetosPositions.length + nosPositions.length);
-      for (let i = 0; i < totalPoints; i++) {
-        particles.push(new Particle(random(width), random(height), createVector(width / 2, height / 2)));
+      angleStep = TWO_PI / numParticles;
+      lengthVariance = random(15, 26); // Initialize with a random value between 6 and 20 pixels
+      centers = [
+        createVector(width * 0.4, height * 0.5),  // Center for the first group of particles
+        createVector(width * 0.6, height * 0.5)   // Center for the second group of particles
+      ];
+      for (let i = 0; i < numParticles; i++) {
+        particles.push(new Particle(i * angleStep));
       }
-
-      // Define the circle center
-      circleCenter = createVector(width / 2, height / 2);
     }
 
     function draw() {
-      background('#76747B');
-      
-      let hoveringCircle = dist(mouseX, mouseY, circleCenter.x, circleCenter.y) < hoverCircleRadius;
-
-      if (hoveringCircle) {
-        formingCircle = true;
-      } else {
-        formingCircle = false;
-      }
-
-      let usinaIdx = 0, projetosIdx = 0, nosIdx = 0;
-      let projetosCount = 0, nosCount = 0;
-
+      background(0);
       for (let p of particles) {
-        if (formingCircle) {
-          if (usinaIdx < circleRadius) {
-            p.setTargetToCircle(circleCenter, circleRadius);
-            usinaIdx++;
-          } else if (projetosIdx < projetosPositions.length) {
-            p.setTargetToProjetos(projetosPositions[projetosIdx]);
-            projetosIdx++;
-            projetosCount++;
-          } else if (nosIdx < nosPositions.length) {
-            p.setTargetToNos(nosPositions[nosIdx]);
-            nosIdx++;
-            nosCount++;
-          } else {
-            p.setTargetToRandom();
-          }
-        } else if (formingUsina) {
-          if (usinaIdx < usinaPositions.length) {
-            p.setTargetToText(usinaPositions[usinaIdx]);
-            usinaIdx++;
-          } else {
-            p.setTargetToRandom();
-          }
-        } else {
-          p.setTargetToBundle();
-        }
         p.update();
         p.display();
-      }
-
-      if (formingCircle && !projetosButtonCreated && projetosCount > projetosPositions.length * 0.8) {
-        createProjetosButton();
-      }
-
-      if (formingCircle && !nosButtonCreated && nosCount > nosPositions.length * 0.8) {
-        createNosButton();
-      }
-    }
-
-    function triggerUsina() {
-      formingUsina = true;
-    }
-
-    function stopUsina() {
-      formingUsina = false;
-    }
-
-    function createProjetosButton() {
-      projetosButton = createButton('Projetos');
-      projetosButton.position(width / 2 - 600, height / 2);
-      projetosButton.mousePressed(() => window.location.href = 'https://trashstuff85.wixstudio.io/my-site-2/projetos');
-      projetosButtonCreated = true;
-    }
-
-    function createNosButton() {
-      nosButton = createButton('Nós');
-      nosButton.position(width / 2 + 300, height / 2);
-      nosButton.mousePressed(() => window.location.href = 'https://trashstuff85.wixstudio.io/my-site-2/sobre');
-      nosButtonCreated = true;
-    }
-
-    function triggerExplosion() {
-      for (let p of particles) {
-        p.explode();
       }
     }
 
     class Particle {
-      constructor(x, y, target) {
-        this.pos = createVector(x, y);
-        this.initialTarget = target;
-        this.target = createVector(random(width), random(height));
-        this.vel = p5.Vector.random2D();
-        this.acc = createVector();
-        this.maxSpeed = 5;
-        this.maxForce = 0.3;
+      constructor(angle) {
+        this.angle = angle;
+        this.center = random(centers);  // Randomly choose one of the two centers
+        this.radius = random(50, 100);
+        this.speed = random(0.5, 2);
+        this.stopRadius = random(width / 6, width / 4);
         this.noiseOffset = random(1000);
         this.shapeType = int(random(3)); // Randomly choose a shape type
-        this.length = random(8, 20); // Length of the line segment
-      }
-
-      setTargetToText(target) {
-        this.target = target;
-      }
-
-      setTargetToProjetos(target) {
-        this.target = target;
-      }
-
-      setTargetToNos(target) {
-        this.target = target;
-      }
-
-      setTargetToCircle(center, radius) {
-        let angle = TWO_PI * random();
-        this.target = p5.Vector.add(center, p5.Vector.fromAngle(angle).mult(radius));
-      }
-
-      setTargetToBundle() {
-        this.target = createVector(width / 2 + random(-200, 200), height / 2 + random(-200, 200));
-      }
-
-      setTargetToRandom() {
-        this.target = createVector(random(width), random(height));
-      }
-
-      applyGravity() {
-        let mouse = createVector(mouseX, mouseY);
-        let force = p5.Vector.sub(mouse, this.pos);
-        let distance = force.mag();
-        distance = constrain(distance, 5, 25);
-        let strength = gravityStrength / (distance * distance);
-        force.setMag(strength);
-        this.applyForce(force);
+        this.length = random(20, 50); // Length of the line segment
       }
 
       update() {
-        // Apply gravity towards the mouse
-        this.applyGravity();
-
-        // Move towards the target position
-        let force = p5.Vector.sub(this.target, this.pos);
-        let d = force.mag();
-        let speed = this.maxSpeed;
-        if (d < 100) {
-          speed = map(d, 0, 100, 0, this.maxSpeed);
+        if (this.radius < this.stopRadius) {
+          this.radius += this.speed;
         }
-        force.setMag(speed);
-        force.sub(this.vel);
-        force.limit(this.maxForce);
-        this.applyForce(force);
-        
-        this.vel.add(this.acc);
-        this.pos.add(this.vel);
-        this.acc.mult(0);
-      }
-
-      applyForce(f) {
-        this.acc.add(f);
-      }
-
-      explode() {
-        let angle = random(TWO_PI);
-        let force = p5.Vector.fromAngle(angle);
-        force.mult(random(5, 10));
-        this.applyForce(force);
       }
 
       display() {
         let noiseFactor = noise(this.noiseOffset) * 10;
-        let x = this.pos.x;
-        let y = this.pos.y;
+        let x = (this.radius + noiseFactor) * cos(this.angle);
+        let y = (this.radius + noiseFactor) * sin(this.angle);
 
-        stroke(0);
+        // Adjust x and y for the slight oval shape
+        x *= 1.2;  // Stretch x for the oval shape
+        y *= 0.8;  // Compress y for the oval shape
+
+        // Rotate the oval by a small angle
+        let rotationAngle = radians(10);  // Adjust this angle as needed
+        let newX = x * cos(rotationAngle) - y * sin(rotationAngle);
+        let newY = x * sin(rotationAngle) + y * cos(rotationAngle);
+        x = newX;
+        y = newY;
+
+        stroke(255);
         strokeWeight(2);
-        point(x, y);  // Draw particles as points
 
-        this.noiseOffset += 0.018; // Increment noise offset for squiggly effect
+        // Translate to the center before drawing
+        push();
+        translate(this.center.x, this.center.y);
+
+        switch (this.shapeType) {
+          case 0:
+            // Draw a straight line segment
+            line(x, y, x + lengthVariance * cos(this.angle), y + lengthVariance * sin(this.angle));
+            break;
+          case 1:
+            // Draw a 90-degree angle
+            line(x, y, x + (lengthVariance / 2) * cos(this.angle), y + (lengthVariance / 2) * sin(this.angle));
+            line(x + (lengthVariance / 2) * cos(this.angle), y + (lengthVariance / 2) * sin(this.angle), x + (lengthVariance / 2) * cos(this.angle), y + lengthVariance * sin(this.angle));
+            break;
+          case 2:
+            // Draw a triangular wave
+            line(x, y, x + (lengthVariance / 4) * cos(this.angle), y + (lengthVariance / 4) * sin(this.angle));
+            line(x + (lengthVariance / 4) * cos(this.angle), y + (lengthVariance / 4) * sin(this.angle), x + (lengthVariance / 2) * cos(this.angle), y);
+            line(x + (lengthVariance / 2) * cos(this.angle), y, x + lengthVariance * cos(this.angle), y - (lengthVariance / 4) * sin(this.angle));
+            break;
+        }
+
+        pop();
+
+        this.noiseOffset += 0.02; // Increment noise offset for squiggly effect
       }
     }
 
-    // Listen for messages from the parent window (Wix)
-    window.addEventListener('message', (event) => {
-      if (event.data === 'triggerUsina') {
-        triggerUsina();
-      }
-    });
-
-    // Add a mousePressed function to trigger the explosion
     function mousePressed() {
-      if (dist(mouseX, mouseY, circleCenter.x, circleCenter.y) < hoverCircleRadius) {
-        triggerExplosion();
+      for (let p of particles) {
+        p.radius = random(50, 100); // Reset radius
       }
+      lengthVariance = random(15, 26); // Change the length variance
     }
   </script>
 </body>
